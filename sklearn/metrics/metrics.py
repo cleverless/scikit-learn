@@ -421,7 +421,7 @@ def matthews_corrcoef(y_true, y_pred):
     
     cov = np.cov(y_true, y_pred)
 	
-    if cov[0,0]==0. or cov[1,1]==0.:
+    if cov[0,0]==0. or cov[1,1]==0. or cov[0,1]:
         return 0.
     else:
         return cov[0,1]/np.sqrt(cov[0,0]*cov[1,1]) 

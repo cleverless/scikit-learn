@@ -415,7 +415,7 @@ def test_confusion_matrix_binary():
 
 def test_matthews_corrcoef_nan():
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+#        warnings.simplefilter("ignore")
         assert_equal(matthews_corrcoef([0], [1]), 0.0)
 
 

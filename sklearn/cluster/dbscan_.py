@@ -12,10 +12,10 @@ import numpy as np
 from ..base import BaseEstimator, ClusterMixin
 from ..metrics import pairwise_distances
 from ..utils import check_random_state
-
+from ..neighbors import BallTree
 
 def dbscan(X, eps=0.5, min_samples=5, metric='euclidean',
-           random_state=None):
+           power=None, random_state=None):
     """Perform DBSCAN clustering from vector array or distance matrix.
 
     Parameters
@@ -37,6 +37,9 @@ def dbscan(X, eps=0.5, min_samples=5, metric='euclidean',
         metric parameter.
         If metric is "precomputed", X is assumed to be a distance matrix and
         must be square.
+    power: float, optional
+        The power of the Minkowski metric to be used to calculate distance
+        between points. 
     random_state: numpy.RandomState, optional
         The generator used to initialize the centers. Defaults to numpy.random.
 
@@ -61,42 +64,89 @@ def dbscan(X, eps=0.5, min_samples=5, metric='euclidean',
     """
     X = np.asarray(X)
     n = X.shape[0]
+
     # If index order not given, create random order.
     random_state = check_random_state(random_state)
     index_order = np.arange(n)
     random_state.shuffle(index_order)
-    D = pairwise_distances(X, metric=metric)
+
+    # check for known metric powers
+    dMatrix = True
+    if power == None:
+        if metric == 'euclidean' or metric == 'l2':
+            power = 2.0
+            dMatrix = False
+        elif metric == 'l1' or metric == 'manhattan' or metric == 'cityblock':
+            power = 1.0
+            dMatrix = False
+    else:
+        dMatrix = False
+
+    if dMatrix: 
+        D = pairwise_distances(X, metric=metric)
+    else:
+        ball_tree = BallTree(X,p=power)
+
     # Calculate neighborhood for all samples. This leaves the original point
     # in, which needs to be considered later (i.e. point i is the
     # neighborhood of point i. While True, its useless information)
-    neighborhoods = [np.where(x <= eps)[0] for x in D]
+    neighborhoods = []
+    if dMatrix:
+        neighborhoods = [np.where(x <= eps)[0] for x in D]
+
     # Initially, all samples are noise.
     labels = -np.ones(n)
+
     # A list of all core samples found.
     core_samples = []
+
     # label_num is the label given to the new cluster
     label_num = 0
+
     # Look at all samples and determine if they are core.
     # If they are then build a new cluster from them.
     for index in index_order:
-        if labels[index] != -1 or len(neighborhoods[index]) < min_samples:
-            # This point is already classified, or not enough for a core point.
+        # Already classified
+        if labels[index] != -1:
             continue
+
+        # get neighbors from neighborhoods or ballTree
+        index_neighborhood = []
+        if dMatrix:
+            index_neighborhood = neighborhoods[index]
+        else:
+            index_neighborhood = ball_tree.query_radius(X[index],eps,return_distance=False)[0]
+
+        # Too few samples to be core
+        if len(index_neighborhood) < min_samples:
+            continue
+
         core_samples.append(index)
         labels[index] = label_num
         # candidates for new core samples in the cluster.
         candidates = [index]
+
         while len(candidates) > 0:
             new_candidates = []
             # A candidate is a core point in the current cluster that has
             # not yet been used to expand the current cluster.
             for c in candidates:
-                noise = np.where(labels[neighborhoods[c]] == -1)[0]
-                noise = neighborhoods[c][noise]
+                c_neighborhood = []
+                if dMatrix:
+                    c_neighborhood = neighborhoods[c]
+                else:
+                    c_neighborhood = ball_tree.query_radius(X[c],eps,return_distance=False)[0]
+                noise = np.where(labels[c_neighborhood] == -1)[0]
+                noise = c_neighborhood[noise]
                 labels[noise] = label_num
                 for neighbor in noise:
+                    n_neighborhood = [] 
+                    if dMatrix:
+                        n_neighborhood = neighborhoods[neighbor]
+                    else:
+                        n_neighborhood = ball_tree.query_radius(X[neighbor],eps,return_distance=False)[0]
                     # check if its a core point as well
-                    if len(neighborhoods[neighbor]) >= min_samples:
+                    if len(n_neighborhood) >= min_samples:
                         # is new core point
                         new_candidates.append(neighbor)
                         core_samples.append(neighbor)
@@ -158,10 +208,11 @@ class DBSCAN(BaseEstimator, ClusterMixin):
     """
 
     def __init__(self, eps=0.5, min_samples=5, metric='euclidean',
-                 random_state=None):
+                 power=None, random_state=None):
         self.eps = eps
         self.min_samples = min_samples
         self.metric = metric
+        self.power = power
         self.random_state = random_state
 
     def fit(self, X):

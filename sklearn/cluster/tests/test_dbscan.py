@@ -10,6 +10,7 @@ from scipy.spatial import distance
 from sklearn.utils.testing import assert_equal
 from sklearn.cluster.dbscan_ import DBSCAN, dbscan
 from .common import generate_clustered_data
+from sklearn.metrics.pairwise import pairwise_distances
 
 
 n_clusters = 3
@@ -85,6 +86,23 @@ def test_dbscan_callable():
     n_clusters_2 = len(set(labels)) - int(-1 in labels)
     assert_equal(n_clusters_2, n_clusters)
 
+def test_dbscan_balltree():
+    """Tests the DBSCAN algorithm with balltree for neighbor calculation."""
+    eps = 0.8
+    min_samples = 10
+
+    D = pairwise_distances(X)
+    core_samples, labels = dbscan(D, metric="precomputed", eps=eps, min_samples=min_samples)
+
+    # number of clusters, ignoring noise if present
+    n_clusters_1 = len(set(labels)) - int(-1 in labels)
+    assert_equal(n_clusters_1, n_clusters)
+
+    db = DBSCAN(power=2.0, eps=eps, min_samples=min_samples)
+    labels = db.fit(X).labels_
+
+    n_clusters_2 = len(set(labels)) - int(-1 in labels)
+    assert_equal(n_clusters_2, n_clusters)
 
 def test_pickle():
     obj = DBSCAN()

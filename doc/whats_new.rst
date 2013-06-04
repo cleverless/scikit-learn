@@ -8,6 +8,10 @@
 Changelog
 ---------
 
+   - Fixed :mod:`sklearn.linear_model.stochastic_gradient.py` L2 regularization
+     issue (minor practical significants).
+     By `Norbert Crombach`_ and `Mathieu Blondel`_ .
+
    - Added an interactive version of `Andreas Müller`_'s
      `Machine Learning Cheat Sheet (for scikit-learn)
      <http://peekaboo-vision.blogspot.de/2013/01/machine-learning-cheat-sheet-for-scikit.html>`_
@@ -26,9 +30,15 @@ Changelog
      `Gilles Louppe`_. See the :ref:`AdaBoost <adaboost>` section of the user
      guide for details and examples.
 
-   - :func:`metrics.accuracy_score`, :func:`metrics.zero_one_loss` support
-     multi-label classification and two new metrics :func:`metrics.hamming_loss`
-     and :func:`metrics.jaccard_similarity_score`
+   - Multi-label classification output is now supported by
+     :func:`metrics.accuracy_score`, :func:`metrics.zero_one_loss`,
+     :func:`metrics.f1_score`, :func:`metrics.fbeta_score`,
+     :func:`metrics.classification_report`,
+     :func:`metrics.precision_score` and :func:`metrics.recall_score`
+     by `Arnaud Joly`_.
+
+  -  Two new metrics :func:`metrics.hamming_loss` and
+     :func:`metrics.jaccard_similarity_score`
      are added with multi-label support by `Arnaud Joly`_.
 
    - Speed and memory usage improvements in
@@ -78,6 +88,19 @@ Changelog
    - :func:`metrics.accuracy_score` has an option normalize to return
      the fraction or the number of correctly classified sample
      by `Arnaud Joly`_.
+
+   - A bug that caused :class:`ensemble.AdaBoostClassifier`'s to output
+     incorrect probabilities has been fixed.
+
+   - Feature selectors now share a mixin providing consistent `transform`,
+     `inverse_transform` and `get_support` methods. By `Joel Nothman`_.
+
+   - A fitted :class:`grid_search.GridSearchCV` or
+     :class:`grid_search.RandomizedSearchCV` can now generally be pickled.
+     By `Joel Nothman`_.
+
+   - Refactored and vectorized implementation of :func:`metrics.roc_curve`
+     and :func:`metrics.precision_recall_curve`. By `Joel Nothman`_.
 
 
 API changes summary
@@ -1912,3 +1935,7 @@ David Huard, Dave Morrill, Ed Schofield, Travis Oliphant, Pearu Peterson.
 .. _Rob Zinkov: http://zinkov.com
 
 .. _Martin Luessi: https://github.com/mluessi
+
+.. _Joel Nothman: http://joelnothman.com
+
+.. _Norbert Crombach: https://github.com/norbert

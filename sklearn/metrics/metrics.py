@@ -418,13 +418,13 @@ def matthews_corrcoef(y_true, y_pred):
     """
     y_true, y_pred = check_arrays(y_true, y_pred)
     y_true, y_pred = _check_1d_array(y_true, y_pred, ravel=True)
+    
+    cov = np.cov(y_true, y_pred)
 
-    mcc = np.corrcoef(y_true, y_pred)[0, 1]
-    if np.isnan(mcc):
+    if cov[0,0]==0. or cov[1,1]==0. or np.isnan(cov[0,1]):
         return 0.
     else:
-        return mcc
-
+        return cov[0,1]/np.sqrt(cov[0,0]*cov[1,1])
 
 def precision_recall_curve(y_true, probas_pred):
     """Compute precision-recall pairs for different probability thresholds
